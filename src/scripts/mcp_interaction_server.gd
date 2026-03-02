@@ -11,10 +11,12 @@ var _busy: bool = false
 var _busy_since: float = 0.0
 const PORT: int = 9090
 const BUSY_TIMEOUT: float = 30.0
+var _key_map: Dictionary
 
 func _ready() -> void:
 	# Ensure MCP server keeps processing even when game is paused
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_init_key_map()
 	_server = TCPServer.new()
 	var err: int = _server.listen(PORT, "127.0.0.1")
 	if err != OK:
@@ -55,6 +57,8 @@ func _process(_delta: float) -> void:
 		print("McpInteractionServer: Client disconnected")
 		_client = null
 		_buffer = ""
+		_busy = false
+		_busy_since = 0.0
 		return
 
 	if status != StreamPeerTCP.STATUS_CONNECTED:
@@ -329,10 +333,8 @@ func _build_tree_node(node: Node) -> Dictionary:
 
 
 # --- Key String to Keycode ---
-func _string_to_keycode(key_str: String) -> int:
-	var upper: String = key_str.to_upper()
-	var key_map: Dictionary = {
-		# Letters
+func _init_key_map() -> void:
+	_key_map = {
 		"A": KEY_A, "B": KEY_B, "C": KEY_C, "D": KEY_D,
 		"E": KEY_E, "F": KEY_F, "G": KEY_G, "H": KEY_H,
 		"I": KEY_I, "J": KEY_J, "K": KEY_K, "L": KEY_L,
@@ -340,11 +342,9 @@ func _string_to_keycode(key_str: String) -> int:
 		"Q": KEY_Q, "R": KEY_R, "S": KEY_S, "T": KEY_T,
 		"U": KEY_U, "V": KEY_V, "W": KEY_W, "X": KEY_X,
 		"Y": KEY_Y, "Z": KEY_Z,
-		# Numbers
 		"0": KEY_0, "1": KEY_1, "2": KEY_2, "3": KEY_3,
 		"4": KEY_4, "5": KEY_5, "6": KEY_6, "7": KEY_7,
 		"8": KEY_8, "9": KEY_9,
-		# Special keys
 		"SPACE": KEY_SPACE, "ENTER": KEY_ENTER, "RETURN": KEY_ENTER,
 		"ESCAPE": KEY_ESCAPE, "ESC": KEY_ESCAPE,
 		"TAB": KEY_TAB, "BACKSPACE": KEY_BACKSPACE,
@@ -355,14 +355,15 @@ func _string_to_keycode(key_str: String) -> int:
 		"UP": KEY_UP, "DOWN": KEY_DOWN, "LEFT": KEY_LEFT, "RIGHT": KEY_RIGHT,
 		"SHIFT": KEY_SHIFT, "CTRL": KEY_CTRL, "CONTROL": KEY_CTRL,
 		"ALT": KEY_ALT, "CAPSLOCK": KEY_CAPSLOCK, "CAPS_LOCK": KEY_CAPSLOCK,
-		# Function keys
 		"F1": KEY_F1, "F2": KEY_F2, "F3": KEY_F3, "F4": KEY_F4,
 		"F5": KEY_F5, "F6": KEY_F6, "F7": KEY_F7, "F8": KEY_F8,
 		"F9": KEY_F9, "F10": KEY_F10, "F11": KEY_F11, "F12": KEY_F12,
 	}
-	if key_map.has(upper):
-		return key_map[upper]
-	# Try single character keycode
+
+func _string_to_keycode(key_str: String) -> int:
+	var upper: String = key_str.to_upper()
+	if _key_map.has(upper):
+		return _key_map[upper]
 	if key_str.length() == 1:
 		return key_str.unicode_at(0)
 	return KEY_NONE

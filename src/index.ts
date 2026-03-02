@@ -9,7 +9,7 @@
 
 import { fileURLToPath } from 'url';
 import { join, dirname, basename, normalize } from 'path';
-import { existsSync, readdirSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, unlinkSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync, copyFileSync, unlinkSync } from 'fs';
 import { spawn, execFile } from 'child_process';
 import { promisify } from 'util';
 import { createConnection, Socket } from 'net';
@@ -1686,15 +1686,13 @@ class GodotServer {
     
     if (!args.projectPath) {
       return createErrorResponse(
-        'Project path is required',
-        ['Provide a valid path to a Godot project directory']
+        'Project path is required'
       );
     }
 
     if (!validatePath(args.projectPath)) {
       return createErrorResponse(
-        'Invalid project path',
-        ['Provide a valid path without ".." or other potentially unsafe characters']
+        'Invalid project path'
       );
     }
 
@@ -1704,11 +1702,7 @@ class GodotServer {
         await this.detectGodotPath();
         if (!this.godotPath) {
           return createErrorResponse(
-            'Could not find a valid Godot executable path',
-            [
-              'Ensure Godot is installed correctly',
-              'Set GODOT_PATH environment variable to specify the correct path',
-            ]
+            'Could not find a valid Godot executable path'
           );
         }
       }
@@ -1717,11 +1711,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -1745,12 +1735,7 @@ class GodotServer {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return createErrorResponse(
-        `Failed to launch Godot editor: ${errorMessage}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to launch Godot editor: ${errorMessage}`
       );
     }
   }
@@ -1765,15 +1750,13 @@ class GodotServer {
     
     if (!args.projectPath) {
       return createErrorResponse(
-        'Project path is required',
-        ['Provide a valid path to a Godot project directory']
+        'Project path is required'
       );
     }
 
     if (!validatePath(args.projectPath)) {
       return createErrorResponse(
-        'Invalid project path',
-        ['Provide a valid path without ".." or other potentially unsafe characters']
+        'Invalid project path'
       );
     }
 
@@ -1782,11 +1765,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -1867,12 +1846,7 @@ class GodotServer {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return createErrorResponse(
-        `Failed to run Godot project: ${errorMessage}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to run Godot project: ${errorMessage}`
       );
     }
   }
@@ -1883,11 +1857,7 @@ class GodotServer {
   private async handleGetDebugOutput() {
     if (!this.activeProcess) {
       return createErrorResponse(
-        'No active Godot process.',
-        [
-          'Use run_project to start a Godot project first',
-          'Check if the Godot process crashed unexpectedly',
-        ]
+        'No active Godot process.'
       );
     }
 
@@ -1914,11 +1884,7 @@ class GodotServer {
   private async handleStopProject() {
     if (!this.activeProcess) {
       return createErrorResponse(
-        'No active Godot process to stop.',
-        [
-          'Use run_project to start a Godot project first',
-          'The process may have already terminated',
-        ]
+        'No active Godot process to stop.'
       );
     }
 
@@ -1963,11 +1929,7 @@ class GodotServer {
         await this.detectGodotPath();
         if (!this.godotPath) {
           return createErrorResponse(
-            'Could not find a valid Godot executable path',
-            [
-              'Ensure Godot is installed correctly',
-              'Set GODOT_PATH environment variable to specify the correct path',
-            ]
+            'Could not find a valid Godot executable path'
           );
         }
       }
@@ -1985,11 +1947,7 @@ class GodotServer {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return createErrorResponse(
-        `Failed to get Godot version: ${errorMessage}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-        ]
+        `Failed to get Godot version: ${errorMessage}`
       );
     }
   }
@@ -2003,15 +1961,13 @@ class GodotServer {
     
     if (!args.directory) {
       return createErrorResponse(
-        'Directory is required',
-        ['Provide a valid directory path to search for Godot projects']
+        'Directory is required'
       );
     }
 
     if (!validatePath(args.directory)) {
       return createErrorResponse(
-        'Invalid directory path',
-        ['Provide a valid path without ".." or other potentially unsafe characters']
+        'Invalid directory path'
       );
     }
 
@@ -2019,8 +1975,7 @@ class GodotServer {
       this.logDebug(`Listing Godot projects in directory: ${args.directory}`);
       if (!existsSync(args.directory)) {
         return createErrorResponse(
-          `Directory does not exist: ${args.directory}`,
-          ['Provide a valid directory path that exists on the system']
+          `Directory does not exist: ${args.directory}`
         );
       }
 
@@ -2037,11 +1992,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to list projects: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure the directory exists and is accessible',
-          'Check if you have permission to read the directory',
-        ]
+        `Failed to list projects: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2117,15 +2068,13 @@ class GodotServer {
     
     if (!args.projectPath) {
       return createErrorResponse(
-        'Project path is required',
-        ['Provide a valid path to a Godot project directory']
+        'Project path is required'
       );
     }
   
     if (!validatePath(args.projectPath)) {
       return createErrorResponse(
-        'Invalid project path',
-        ['Provide a valid path without ".." or other potentially unsafe characters']
+        'Invalid project path'
       );
     }
   
@@ -2135,11 +2084,7 @@ class GodotServer {
         await this.detectGodotPath();
         if (!this.godotPath) {
           return createErrorResponse(
-            'Could not find a valid Godot executable path',
-            [
-              'Ensure Godot is installed correctly',
-              'Set GODOT_PATH environment variable to specify the correct path',
-            ]
+            'Could not find a valid Godot executable path'
           );
         }
       }
@@ -2148,11 +2093,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
   
@@ -2168,8 +2109,7 @@ class GodotServer {
       // Extract project name from project.godot file
       let projectName = basename(args.projectPath);
       try {
-        const fs = require('fs');
-        const projectFileContent = fs.readFileSync(projectFile, 'utf8');
+        const projectFileContent = readFileSync(projectFile, 'utf8');
         const configNameMatch = projectFileContent.match(/config\/name="([^"]+)"/);
         if (configNameMatch && configNameMatch[1]) {
           projectName = configNameMatch[1];
@@ -2199,12 +2139,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to get project info: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to get project info: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2218,15 +2153,13 @@ class GodotServer {
     
     if (!args.projectPath || !args.scenePath) {
       return createErrorResponse(
-        'Project path and scene path are required',
-        ['Provide valid paths for both the project and the scene']
+        'Project path and scene path are required'
       );
     }
 
     if (!validatePath(args.projectPath) || !validatePath(args.scenePath)) {
       return createErrorResponse(
-        'Invalid path',
-        ['Provide valid paths without ".." or other potentially unsafe characters']
+        'Invalid path'
       );
     }
 
@@ -2235,11 +2168,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -2254,12 +2183,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to create scene: ${stderr}`,
-          [
-            'Check if the root node type is valid',
-            'Ensure you have write permissions to the scene path',
-            'Verify the scene path is valid',
-          ]
+          `Failed to create scene: ${stderr}`
         );
       }
 
@@ -2273,12 +2197,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to create scene: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to create scene: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2292,15 +2211,13 @@ class GodotServer {
     
     if (!args.projectPath || !args.scenePath || !args.nodeType || !args.nodeName) {
       return createErrorResponse(
-        'Missing required parameters',
-        ['Provide projectPath, scenePath, nodeType, and nodeName']
+        'Missing required parameters'
       );
     }
 
     if (!validatePath(args.projectPath) || !validatePath(args.scenePath)) {
       return createErrorResponse(
-        'Invalid path',
-        ['Provide valid paths without ".." or other potentially unsafe characters']
+        'Invalid path'
       );
     }
 
@@ -2309,11 +2226,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -2321,11 +2234,7 @@ class GodotServer {
       const scenePath = join(args.projectPath, args.scenePath);
       if (!existsSync(scenePath)) {
         return createErrorResponse(
-          `Scene file does not exist: ${args.scenePath}`,
-          [
-            'Ensure the scene path is correct',
-            'Use create_scene to create a new scene first',
-          ]
+          `Scene file does not exist: ${args.scenePath}`
         );
       }
 
@@ -2350,12 +2259,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to add node: ${stderr}`,
-          [
-            'Check if the node type is valid',
-            'Ensure the parent node path exists',
-            'Verify the scene file is valid',
-          ]
+          `Failed to add node: ${stderr}`
         );
       }
 
@@ -2369,12 +2273,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to add node: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to add node: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2388,8 +2287,7 @@ class GodotServer {
     
     if (!args.projectPath || !args.scenePath || !args.nodePath || !args.texturePath) {
       return createErrorResponse(
-        'Missing required parameters',
-        ['Provide projectPath, scenePath, nodePath, and texturePath']
+        'Missing required parameters'
       );
     }
 
@@ -2400,8 +2298,7 @@ class GodotServer {
       !validatePath(args.texturePath)
     ) {
       return createErrorResponse(
-        'Invalid path',
-        ['Provide valid paths without ".." or other potentially unsafe characters']
+        'Invalid path'
       );
     }
 
@@ -2410,11 +2307,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -2422,11 +2315,7 @@ class GodotServer {
       const scenePath = join(args.projectPath, args.scenePath);
       if (!existsSync(scenePath)) {
         return createErrorResponse(
-          `Scene file does not exist: ${args.scenePath}`,
-          [
-            'Ensure the scene path is correct',
-            'Use create_scene to create a new scene first',
-          ]
+          `Scene file does not exist: ${args.scenePath}`
         );
       }
 
@@ -2434,11 +2323,7 @@ class GodotServer {
       const texturePath = join(args.projectPath, args.texturePath);
       if (!existsSync(texturePath)) {
         return createErrorResponse(
-          `Texture file does not exist: ${args.texturePath}`,
-          [
-            'Ensure the texture path is correct',
-            'Upload or create the texture file first',
-          ]
+          `Texture file does not exist: ${args.texturePath}`
         );
       }
 
@@ -2454,12 +2339,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to load sprite: ${stderr}`,
-          [
-            'Check if the node path is correct',
-            'Ensure the node is a Sprite2D, Sprite3D, or TextureRect',
-            'Verify the texture file is a valid image format',
-          ]
+          `Failed to load sprite: ${stderr}`
         );
       }
 
@@ -2473,12 +2353,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to load sprite: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to load sprite: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2492,8 +2367,7 @@ class GodotServer {
     
     if (!args.projectPath || !args.scenePath || !args.outputPath) {
       return createErrorResponse(
-        'Missing required parameters',
-        ['Provide projectPath, scenePath, and outputPath']
+        'Missing required parameters'
       );
     }
 
@@ -2503,8 +2377,7 @@ class GodotServer {
       !validatePath(args.outputPath)
     ) {
       return createErrorResponse(
-        'Invalid path',
-        ['Provide valid paths without ".." or other potentially unsafe characters']
+        'Invalid path'
       );
     }
 
@@ -2513,11 +2386,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -2525,11 +2394,7 @@ class GodotServer {
       const scenePath = join(args.projectPath, args.scenePath);
       if (!existsSync(scenePath)) {
         return createErrorResponse(
-          `Scene file does not exist: ${args.scenePath}`,
-          [
-            'Ensure the scene path is correct',
-            'Use create_scene to create a new scene first',
-          ]
+          `Scene file does not exist: ${args.scenePath}`
         );
       }
 
@@ -2549,12 +2414,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to export mesh library: ${stderr}`,
-          [
-            'Check if the scene contains valid 3D meshes',
-            'Ensure the output path is valid',
-            'Verify the scene file is valid',
-          ]
+          `Failed to export mesh library: ${stderr}`
         );
       }
 
@@ -2568,12 +2428,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to export mesh library: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to export mesh library: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2587,23 +2442,20 @@ class GodotServer {
     
     if (!args.projectPath || !args.scenePath) {
       return createErrorResponse(
-        'Missing required parameters',
-        ['Provide projectPath and scenePath']
+        'Missing required parameters'
       );
     }
 
     if (!validatePath(args.projectPath) || !validatePath(args.scenePath)) {
       return createErrorResponse(
-        'Invalid path',
-        ['Provide valid paths without ".." or other potentially unsafe characters']
+        'Invalid path'
       );
     }
 
     // If newPath is provided, validate it
     if (args.newPath && !validatePath(args.newPath)) {
       return createErrorResponse(
-        'Invalid new path',
-        ['Provide a valid new path without ".." or other potentially unsafe characters']
+        'Invalid new path'
       );
     }
 
@@ -2612,11 +2464,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -2624,11 +2472,7 @@ class GodotServer {
       const scenePath = join(args.projectPath, args.scenePath);
       if (!existsSync(scenePath)) {
         return createErrorResponse(
-          `Scene file does not exist: ${args.scenePath}`,
-          [
-            'Ensure the scene path is correct',
-            'Use create_scene to create a new scene first',
-          ]
+          `Scene file does not exist: ${args.scenePath}`
         );
       }
 
@@ -2647,12 +2491,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to save scene: ${stderr}`,
-          [
-            'Check if the scene file is valid',
-            'Ensure you have write permissions to the output path',
-            'Verify the scene can be properly packed',
-          ]
+          `Failed to save scene: ${stderr}`
         );
       }
 
@@ -2667,12 +2506,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to save scene: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to save scene: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -2686,15 +2520,13 @@ class GodotServer {
     
     if (!args.projectPath || !args.filePath) {
       return createErrorResponse(
-        'Missing required parameters',
-        ['Provide projectPath and filePath']
+        'Missing required parameters'
       );
     }
 
     if (!validatePath(args.projectPath) || !validatePath(args.filePath)) {
       return createErrorResponse(
-        'Invalid path',
-        ['Provide valid paths without ".." or other potentially unsafe characters']
+        'Invalid path'
       );
     }
 
@@ -2704,11 +2536,7 @@ class GodotServer {
         await this.detectGodotPath();
         if (!this.godotPath) {
           return createErrorResponse(
-            'Could not find a valid Godot executable path',
-            [
-              'Ensure Godot is installed correctly',
-              'Set GODOT_PATH environment variable to specify the correct path',
-            ]
+            'Could not find a valid Godot executable path'
           );
         }
       }
@@ -2717,11 +2545,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -2729,8 +2553,7 @@ class GodotServer {
       const filePath = join(args.projectPath, args.filePath);
       if (!existsSync(filePath)) {
         return createErrorResponse(
-          `File does not exist: ${args.filePath}`,
-          ['Ensure the file path is correct']
+          `File does not exist: ${args.filePath}`
         );
       }
 
@@ -2740,11 +2563,7 @@ class GodotServer {
 
       if (!isGodot44OrLater(version)) {
         return createErrorResponse(
-          `UIDs are only supported in Godot 4.4 or later. Current version: ${version}`,
-          [
-            'Upgrade to Godot 4.4 or later to use UIDs',
-            'Use resource paths instead of UIDs for this version of Godot',
-          ]
+          `UIDs are only supported in Godot 4.4 or later. Current version: ${version}`
         );
       }
 
@@ -2758,11 +2577,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to get UID: ${stderr}`,
-          [
-            'Check if the file is a valid Godot resource',
-            'Ensure the file path is correct',
-          ]
+          `Failed to get UID: ${stderr}`
         );
       }
 
@@ -2776,12 +2591,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to get UID: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to get UID: ${error?.message || 'Unknown error'}`
       );
     }
   }
@@ -3214,7 +3024,8 @@ class GodotServer {
   }
 
   private async handleGameGetNodesInGroup(args: any) {
-    if (!(args || {}).group) return createErrorResponse('group is required.');
+    args = normalizeParameters(args || {});
+    if (!args.group) return createErrorResponse('group is required.');
     return this.gameCommand('get_nodes_in_group', args, a => ({ group: a.group }));
   }
 
@@ -3263,15 +3074,13 @@ class GodotServer {
     
     if (!args.projectPath) {
       return createErrorResponse(
-        'Project path is required',
-        ['Provide a valid path to a Godot project directory']
+        'Project path is required'
       );
     }
 
     if (!validatePath(args.projectPath)) {
       return createErrorResponse(
-        'Invalid project path',
-        ['Provide a valid path without ".." or other potentially unsafe characters']
+        'Invalid project path'
       );
     }
 
@@ -3281,11 +3090,7 @@ class GodotServer {
         await this.detectGodotPath();
         if (!this.godotPath) {
           return createErrorResponse(
-            'Could not find a valid Godot executable path',
-            [
-              'Ensure Godot is installed correctly',
-              'Set GODOT_PATH environment variable to specify the correct path',
-            ]
+            'Could not find a valid Godot executable path'
           );
         }
       }
@@ -3294,11 +3099,7 @@ class GodotServer {
       const projectFile = join(args.projectPath, 'project.godot');
       if (!existsSync(projectFile)) {
         return createErrorResponse(
-          `Not a valid Godot project: ${args.projectPath}`,
-          [
-            'Ensure the path points to a directory containing a project.godot file',
-            'Use list_projects to find valid Godot projects',
-          ]
+          `Not a valid Godot project: ${args.projectPath}`
         );
       }
 
@@ -3308,11 +3109,7 @@ class GodotServer {
 
       if (!isGodot44OrLater(version)) {
         return createErrorResponse(
-          `UIDs are only supported in Godot 4.4 or later. Current version: ${version}`,
-          [
-            'Upgrade to Godot 4.4 or later to use UIDs',
-            'Use resource paths instead of UIDs for this version of Godot',
-          ]
+          `UIDs are only supported in Godot 4.4 or later. Current version: ${version}`
         );
       }
 
@@ -3326,11 +3123,7 @@ class GodotServer {
 
       if (stderr && stderr.includes('Failed to')) {
         return createErrorResponse(
-          `Failed to update project UIDs: ${stderr}`,
-          [
-            'Check if the project is valid',
-            'Ensure you have write permissions to the project directory',
-          ]
+          `Failed to update project UIDs: ${stderr}`
         );
       }
 
@@ -3344,12 +3137,7 @@ class GodotServer {
       };
     } catch (error: any) {
       return createErrorResponse(
-        `Failed to update project UIDs: ${error?.message || 'Unknown error'}`,
-        [
-          'Ensure Godot is installed correctly',
-          'Check if the GODOT_PATH environment variable is set correctly',
-          'Verify the project path is accessible',
-        ]
+        `Failed to update project UIDs: ${error?.message || 'Unknown error'}`
       );
     }
   }

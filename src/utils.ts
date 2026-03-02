@@ -94,7 +94,7 @@ export function validatePath(path: string): boolean {
   return true;
 }
 
-export function createErrorResponse(message: string, _possibleSolutions?: string[]): any {
+export function createErrorResponse(message: string): any {
   console.error(`[SERVER] Error response: ${message}`);
 
   return {

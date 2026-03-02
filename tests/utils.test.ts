@@ -170,10 +170,10 @@ describe('createErrorResponse', () => {
     expect(result.content[0].text).toBe('Test error');
   });
 
-  it('accepts optional possibleSolutions without crashing', () => {
-    const result = createErrorResponse('Error', ['Fix A', 'Fix B']);
+  it('handles different error messages', () => {
+    const result = createErrorResponse('Another error');
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toBe('Error');
+    expect(result.content[0].text).toBe('Another error');
   });
 });
 
