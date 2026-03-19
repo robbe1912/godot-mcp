@@ -6090,7 +6090,7 @@ class GodotServer {
     const projectFile = join(args.projectPath, 'project.godot');
     if (!existsSync(projectFile)) return createErrorResponse(`Not a valid Godot project: ${args.projectPath}`);
     try {
-      const fullPath = join(args.projectPath, args.scriptPath);
+      const fullPath = join(args.projectPath, stripResPrefix(args.scriptPath));
       const dir = dirname(fullPath);
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       let source = args.source;
