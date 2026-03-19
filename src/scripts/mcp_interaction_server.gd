@@ -352,11 +352,24 @@ func _cmd_screenshot() -> void:
 		return
 	var png_buffer: PackedByteArray = image.save_png_to_buffer()
 	var base64_str: String = Marshalls.raw_to_base64(png_buffer)
+	# Save a smaller version for external vision analysis (max 512px wide)
+	var scaled: Image = image.duplicate()
+	var max_w: int = 512
+	if scaled.get_width() > max_w:
+		scaled.resize(max_w, int(float(max_w) / float(scaled.get_width()) * float(scaled.get_height())), Image.INTERPOLATE_BILINEAR)
+	var small_buffer: PackedByteArray = scaled.save_png_to_buffer()
+	var save_path: String = "user://mcp_screenshot_latest.png"
+	var file: FileAccess = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		file.store_buffer(small_buffer)
+		file.close()
+	var disk_path: String = ProjectSettings.globalize_path(save_path)
 	_send_response({
 		"success": true,
 		"data": base64_str,
 		"width": image.get_width(),
-		"height": image.get_height()
+		"height": image.get_height(),
+		"file_path": disk_path
 	})
 
 
