@@ -31,6 +31,7 @@ import {
   validatePath,
   createErrorResponse,
   isGodot44OrLater,
+  stripResPrefix,
   type OperationParams,
 } from './utils.js';
 
@@ -4087,7 +4088,7 @@ class GodotServer {
       }
 
       // Check if the scene file exists
-      const scenePath = join(args.projectPath, args.scenePath);
+      const scenePath = join(args.projectPath, stripResPrefix(args.scenePath));
       if (!existsSync(scenePath)) {
         return createErrorResponse(
           `Scene file does not exist: ${args.scenePath}`
@@ -4168,7 +4169,7 @@ class GodotServer {
       }
 
       // Check if the scene file exists
-      const scenePath = join(args.projectPath, args.scenePath);
+      const scenePath = join(args.projectPath, stripResPrefix(args.scenePath));
       if (!existsSync(scenePath)) {
         return createErrorResponse(
           `Scene file does not exist: ${args.scenePath}`
@@ -4176,7 +4177,7 @@ class GodotServer {
       }
 
       // Check if the texture file exists
-      const texturePath = join(args.projectPath, args.texturePath);
+      const texturePath = join(args.projectPath, stripResPrefix(args.texturePath));
       if (!existsSync(texturePath)) {
         return createErrorResponse(
           `Texture file does not exist: ${args.texturePath}`
@@ -4247,7 +4248,7 @@ class GodotServer {
       }
 
       // Check if the scene file exists
-      const scenePath = join(args.projectPath, args.scenePath);
+      const scenePath = join(args.projectPath, stripResPrefix(args.scenePath));
       if (!existsSync(scenePath)) {
         return createErrorResponse(
           `Scene file does not exist: ${args.scenePath}`
@@ -4325,7 +4326,7 @@ class GodotServer {
       }
 
       // Check if the scene file exists
-      const scenePath = join(args.projectPath, args.scenePath);
+      const scenePath = join(args.projectPath, stripResPrefix(args.scenePath));
       if (!existsSync(scenePath)) {
         return createErrorResponse(
           `Scene file does not exist: ${args.scenePath}`
@@ -4406,7 +4407,7 @@ class GodotServer {
       }
 
       // Check if the file exists
-      const filePath = join(args.projectPath, args.filePath);
+      const filePath = join(args.projectPath, stripResPrefix(args.filePath));
       if (!existsSync(filePath)) {
         return createErrorResponse(
           `File does not exist: ${args.filePath}`
@@ -4600,7 +4601,7 @@ class GodotServer {
       return createErrorResponse(`Not a valid Godot project: ${args.projectPath}`);
     }
 
-    const scenePath = join(args.projectPath, args.scenePath);
+    const scenePath = join(args.projectPath, stripResPrefix(args.scenePath));
     if (!existsSync(scenePath)) {
       return createErrorResponse(`Scene file does not exist: ${args.scenePath}`);
     }
@@ -4932,7 +4933,7 @@ class GodotServer {
     const projectFile = join(args.projectPath, 'project.godot');
     if (!existsSync(projectFile))
       return createErrorResponse(`Not a valid Godot project: ${args.projectPath}`);
-    const fullPath = join(args.projectPath, args.filePath);
+    const fullPath = join(args.projectPath, stripResPrefix(args.filePath));
     if (!existsSync(fullPath))
       return createErrorResponse(`File does not exist: ${args.filePath}`);
     try {
@@ -4953,7 +4954,7 @@ class GodotServer {
     if (!existsSync(projectFile))
       return createErrorResponse(`Not a valid Godot project: ${args.projectPath}`);
     try {
-      const fullPath = join(args.projectPath, args.filePath);
+      const fullPath = join(args.projectPath, stripResPrefix(args.filePath));
       const parentDir = dirname(fullPath);
       if (!existsSync(parentDir)) {
         mkdirSync(parentDir, { recursive: true });
@@ -4974,7 +4975,7 @@ class GodotServer {
     const projectFile = join(args.projectPath, 'project.godot');
     if (!existsSync(projectFile))
       return createErrorResponse(`Not a valid Godot project: ${args.projectPath}`);
-    const fullPath = join(args.projectPath, args.filePath);
+    const fullPath = join(args.projectPath, stripResPrefix(args.filePath));
     if (!existsSync(fullPath))
       return createErrorResponse(`File does not exist: ${args.filePath}`);
     try {
@@ -6060,7 +6061,7 @@ class GodotServer {
     if (!validatePath(args.projectPath) || !validatePath(args.filePath) || !validatePath(args.newPath)) return createErrorResponse('Invalid path.');
     const projectFile = join(args.projectPath, 'project.godot');
     if (!existsSync(projectFile)) return createErrorResponse(`Not a valid Godot project: ${args.projectPath}`);
-    const srcFull = join(args.projectPath, args.filePath);
+    const srcFull = join(args.projectPath, stripResPrefix(args.filePath));
     const dstFull = join(args.projectPath, args.newPath);
     if (!existsSync(srcFull)) return createErrorResponse(`File not found: ${args.filePath}`);
     try {

@@ -544,17 +544,11 @@ func _cmd_eval(params: Dictionary) -> void:
 		_send_response({"error": "No code provided"})
 		return
 
-	# Wrap user code in a function so we can capture the return value
-	var script_source: String = """extends Node
-
-func execute():
-	var __result = null
-	__result = await _run()
-	return __result
-
-func _run():
-%s
-""" % [_indent_code(code)]
+	# Wrap user code in a RefCounted script to isolate runtime errors from the game loop.
+	# RefCounted is NOT in the scene tree, so errors won't trigger debugger breaks
+	# that freeze the game when running in debug mode.
+	var user_code_indented: String = _indent_code(code)
+	var script_source: String = "extends RefCounted\n\nfunc execute():\n\tvar __result = null\n\t__result = await _run()\n\treturn __result\n\nfunc _run():\n%s\n" % user_code_indented
 
 	var script: GDScript = GDScript.new()
 	script.source_code = script_source
@@ -563,17 +557,15 @@ func _run():
 		_send_response({"error": "Failed to compile GDScript (error %d). Check syntax." % err})
 		return
 
-	var temp_node: Node = Node.new()
-	temp_node.set_script(script)
-	# Allow eval to work even when game is paused
-	temp_node.process_mode = Node.PROCESS_MODE_ALWAYS
-	add_child(temp_node)
+	var temp_instance = script.new()
 
 	var result: Variant = null
-	if temp_node.has_method("execute"):
-		result = await temp_node.execute()
+	if temp_instance.has_method("execute"):
+		result = await temp_instance.execute()
+	else:
+		_send_response({"error": "Generated script has no 'execute' method"})
+		return
 
-	temp_node.queue_free()
 	_send_response({"success": true, "result": _variant_to_json(result)})
 
 

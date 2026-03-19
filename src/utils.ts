@@ -202,6 +202,17 @@ export function convertCamelToSnakeCase(params: OperationParams): OperationParam
   return result;
 }
 
+/**
+ * Strip Godot's res:// prefix from a path so it can be joined with a filesystem path.
+ * e.g. "res://scenes/test.tscn" -> "scenes/test.tscn"
+ */
+export function stripResPrefix(path: string): string {
+  if (path && path.startsWith('res://')) {
+    return path.slice(6);
+  }
+  return path;
+}
+
 export function validatePath(path: string): boolean {
   if (!path || path.includes('..')) {
     return false;
