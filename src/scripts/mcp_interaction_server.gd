@@ -557,37 +557,52 @@ func _cmd_eval(params: Dictionary) -> void:
 		_send_response({"error": "No code provided"})
 		return
 
-	# Wrap user code in a RefCounted script to isolate runtime errors from the game loop.
-	# RefCounted is NOT in the scene tree, so errors won't trigger debugger breaks
-	# that freeze the game when running in debug mode.
-	var user_code_indented: String = _indent_code(code)
-	var script_source: String = "extends RefCounted\n\nfunc execute():\n\tvar __result = null\n\t__result = await _run()\n\treturn __result\n\nfunc _run():\n%s\n" % user_code_indented
+	# --- Expression-based eval (safe, no freeze risk) ---
+	#
+	# GDScript.new() + reload() triggers an unstoppable debugger break on
+	# ANY script error in Godot 4.2+, freezing the main thread. See:
+	# github.com/godotengine/godot/issues/85699
+	#
+	# Expression.parse() / execute() return error codes instead, so they
+	# never freeze the game. We use the SceneTree root as base_instance so
+	# that get_node(), get_tree(), get_children(), etc. work naturally.
+	#
+	# All registered global singletons (Engine, Input, Time, OS, etc.) are
+	# passed as input variables so they can be referenced by name.
+	#
+	# Limitation: only single expressions are supported (no multi-line code,
+	# no func/var/for/while/if declarations). Use game_call_method or
+	# game_set_property for imperative operations.
 
-	var script: GDScript = GDScript.new()
-	script.source_code = script_source
-	var err: int = script.reload()
+	var stripped: String = code.strip_edges()
+	var is_single_expression: bool = not ("\n" in stripped or "func " in stripped or "var " in stripped or "for " in stripped or "while " in stripped or "if " in stripped or "class_name " in stripped)
+
+	if not is_single_expression:
+		_send_response({"error": "Multi-line code is not supported by eval. Use single expressions only (e.g., get_node('/root/...').property, Engine.get_frames_per_second()). For imperative operations, use game_call_method or game_set_property."})
+		return
+
+	# Collect all global singletons so they're accessible by name (Engine, Input, Time, OS, …)
+	var singleton_names: PackedStringArray = Engine.get_singleton_list()
+	var input_names: PackedStringArray = []
+	var inputs: Array = []
+	for sname: String in singleton_names:
+		var singleton: Object = Engine.get_singleton(sname)
+		if singleton != null:
+			input_names.append(sname)
+			inputs.append(singleton)
+
+	var expr: Expression = Expression.new()
+	var err: int = expr.parse(stripped, input_names)
 	if err != OK:
-		_send_response({"error": "Failed to compile GDScript (error %d). Check syntax." % err})
+		_send_response({"error": "Expression parse error: %s" % expr.get_error_text(), "error_type": "parse"})
 		return
-
-	var temp_instance = script.new()
-
-	var result: Variant = null
-	if temp_instance.has_method("execute"):
-		result = await temp_instance.execute()
-	else:
-		_send_response({"error": "Generated script has no 'execute' method"})
+	var root_node: Node = Engine.get_main_loop().root
+	var result: Variant = expr.execute(inputs, root_node, false)
+	if expr.has_execute_failed():
+		_send_response({"error": "Expression execution error: %s" % expr.get_error_text(), "error_type": "runtime"})
 		return
-
 	_send_response({"success": true, "result": _variant_to_json(result)})
 
-
-func _indent_code(code: String) -> String:
-	var lines: PackedStringArray = code.split("\n")
-	var indented: String = ""
-	for line in lines:
-		indented += "\t" + line + "\n"
-	return indented
 
 
 # --- Get Property ---
