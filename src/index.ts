@@ -71,7 +71,7 @@ interface GameConnection {
   socket: Socket | null;
   connected: boolean;
   responseBuffer: string;
-  pendingResolve: ((value: any) => void) | null;
+  pendingResolves: Map<string, (value: any) => void>;
   projectPath: string | null;
 }
 
@@ -90,7 +90,7 @@ class GodotServer {
     socket: null,
     connected: false,
     responseBuffer: '',
-    pendingResolve: null,
+    pendingResolves: new Map(),
     projectPath: null,
   };
   private lastErrorIndex: number = 0;
@@ -448,12 +448,23 @@ class GodotServer {
                 const newlinePos = this.gameConnection.responseBuffer.indexOf('\n');
                 const line = this.gameConnection.responseBuffer.substring(0, newlinePos).trim();
                 this.gameConnection.responseBuffer = this.gameConnection.responseBuffer.substring(newlinePos + 1);
-                if (line.length > 0 && this.gameConnection.pendingResolve) {
+                if (line.length > 0) {
                   try {
                     const parsed = JSON.parse(line);
-                    const resolver = this.gameConnection.pendingResolve;
-                    this.gameConnection.pendingResolve = null;
-                    resolver(parsed);
+                    const id = parsed.id as string | undefined;
+                    if (id && this.gameConnection.pendingResolves.has(id)) {
+                      const resolver = this.gameConnection.pendingResolves.get(id)!;
+                      this.gameConnection.pendingResolves.delete(id);
+                      resolver(parsed);
+                    } else if (this.gameConnection.pendingResolves.size === 1) {
+                      // Backward compat: if only one pending, resolve it
+                      const entry = this.gameConnection.pendingResolves.entries().next().value;
+                      if (entry) {
+                        const [rid, resolver] = entry;
+                        this.gameConnection.pendingResolves.delete(rid);
+                        resolver(parsed);
+                      }
+                    }
                   } catch (e) {
                     this.logDebug(`Failed to parse game response: ${line}`);
                   }
@@ -465,10 +476,11 @@ class GodotServer {
               this.logDebug('Game interaction connection closed');
               this.gameConnection.connected = false;
               this.gameConnection.socket = null;
-              if (this.gameConnection.pendingResolve) {
-                this.gameConnection.pendingResolve({ error: 'Connection closed' });
-                this.gameConnection.pendingResolve = null;
+              // Reject all pending commands
+              for (const [id, resolver] of this.gameConnection.pendingResolves) {
+                resolver({ error: 'Connection closed' });
               }
+              this.gameConnection.pendingResolves.clear();
             });
 
             socket.on('error', (err: Error) => {
@@ -504,32 +516,35 @@ class GodotServer {
     }
     this.gameConnection.connected = false;
     this.gameConnection.responseBuffer = '';
-    if (this.gameConnection.pendingResolve) {
-      this.gameConnection.pendingResolve({ error: 'Disconnected' });
-      this.gameConnection.pendingResolve = null;
+    for (const [id, resolver] of this.gameConnection.pendingResolves) {
+      resolver({ error: 'Disconnected' });
     }
+    this.gameConnection.pendingResolves.clear();
   }
 
   /**
    * Send a command to the running game and wait for a response
    */
+  private nextCommandId = 0;
+
   private async sendGameCommand(command: string, params: Record<string, any> = {}, timeoutMs: number = 10000): Promise<any> {
     if (!this.gameConnection.connected || !this.gameConnection.socket) {
       throw new Error('Not connected to game interaction server. Is the game running?');
     }
 
-    const payload = JSON.stringify({ command, params }) + '\n';
+    const id = `cmd_${++this.nextCommandId}`;
+    const payload = JSON.stringify({ command, params, id }) + '\n';
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        this.gameConnection.pendingResolve = null;
-        reject(new Error(`Game command '${command}' timed out after ${timeoutMs / 1000}s`));
+        this.gameConnection.pendingResolves.delete(id);
+        reject(new Error(`Game command '${command}' (id=${id}) timed out after ${timeoutMs / 1000}s`));
       }, timeoutMs);
 
-      this.gameConnection.pendingResolve = (response: any) => {
+      this.gameConnection.pendingResolves.set(id, (response: any) => {
         clearTimeout(timeout);
         resolve(response);
-      };
+      });
 
       this.gameConnection.socket!.write(payload);
     });

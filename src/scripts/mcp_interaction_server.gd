@@ -9,6 +9,9 @@ var _client: StreamPeerTCP
 var _buffer: String = ""
 var _busy: bool = false
 var _busy_since: float = 0.0
+var _command_queue: Array[Dictionary] = []  # Queued commands for sequential processing
+var _current_request_id: String = ""  # ID of the currently executing command
+var _next_request_id: int = 0  # Auto-incrementing ID counter
 const PORT: int = 9090
 const BUSY_TIMEOUT: float = 30.0
 var _key_map: Dictionary
@@ -82,25 +85,37 @@ func _process(_delta: float) -> void:
 
 
 func _handle_command(json_str: String) -> void:
+	# Extract request ID before anything else (for response matching)
+	var request_id: String = ""
+	var json: JSON = JSON.new()
+	var parse_err: int = json.parse(json_str)
+	if parse_err == OK and json.data is Dictionary:
+		request_id = json.data.get("id", "")
+
 	if _busy:
-		_send_response_raw({"error": "Server busy processing another command. Try again."})
+		# Queue command for later processing instead of rejecting
+		_command_queue.append({"json_str": json_str, "id": request_id})
 		return
 	_busy = true
 	_busy_since = Time.get_ticks_msec() / 1000.0
+	_process_command(json_str, request_id)
 
+
+func _process_command(json_str: String, request_id: String) -> void:
 	var json: JSON = JSON.new()
 	var parse_err: int = json.parse(json_str)
 	if parse_err != OK:
-		_send_response({"error": "Invalid JSON: %s" % json.get_error_message()})
+		_send_response({"error": "Invalid JSON: %s" % json.get_error_message(), "id": request_id})
 		return
 
 	var data: Variant = json.data
 	if not data is Dictionary:
-		_send_response({"error": "Expected JSON object"})
+		_send_response({"error": "Expected JSON object", "id": request_id})
 		return
 
 	var command: String = data.get("command", "")
 	var params: Dictionary = data.get("params", {})
+	_current_request_id = request_id
 
 	match command:
 		# Async commands (use await)
@@ -111,7 +126,7 @@ func _handle_command(json_str: String) -> void:
 		"key_press":
 			await _cmd_key_press(params)
 		"eval":
-			await _cmd_eval(params)
+			_cmd_eval(params)
 		"wait":
 			await _cmd_wait(params)
 		# Sync commands
@@ -326,11 +341,22 @@ func _handle_command(json_str: String) -> void:
 			_send_response({"error": "Unknown command: %s" % command})
 
 
-# Send response and clear busy flag
+# Send response, clear busy flag, and process next queued command
 func _send_response(data: Dictionary) -> void:
+	# Attach request ID for response matching
+	if not _current_request_id.is_empty():
+		data["id"] = _current_request_id
+		_current_request_id = ""
 	_busy = false
 	_busy_since = 0.0
 	_send_response_raw(data)
+
+	# Process next queued command if any
+	if _command_queue.size() > 0:
+		var next: Dictionary = _command_queue.pop_front()
+		_busy = true
+		_busy_since = Time.get_ticks_msec() / 1000.0
+		_process_command(next["json_str"], next.get("id", ""))
 
 
 # Send response without clearing busy flag (used when rejecting during busy state)
@@ -575,6 +601,14 @@ func _cmd_eval(params: Dictionary) -> void:
 	# game_set_property for imperative operations.
 
 	var stripped: String = code.strip_edges()
+
+	# Auto-strip 'return' prefix — Expression doesn't support statements
+	if stripped.begins_with("return "):
+		stripped = stripped.substr(7).strip_edges()
+	elif stripped == "return":
+		_send_response({"error": "Empty return expression"})
+		return
+
 	var is_single_expression: bool = not ("\n" in stripped or "func " in stripped or "var " in stripped or "for " in stripped or "while " in stripped or "if " in stripped or "class_name " in stripped)
 
 	if not is_single_expression:
@@ -599,7 +633,20 @@ func _cmd_eval(params: Dictionary) -> void:
 	var root_node: Node = Engine.get_main_loop().root
 	var result: Variant = expr.execute(inputs, root_node, false)
 	if expr.has_execute_failed():
-		_send_response({"error": "Expression execution error: %s" % expr.get_error_text(), "error_type": "runtime"})
+		var error_text: String = expr.get_error_text()
+		# Heuristic: if error mentions "base type Object" and expression contains
+		# get_node(), the node likely returned null (not found)
+		if "base type Object" in error_text and "get_node(" in stripped:
+			# Extract the node path from the first get_node() call
+			var regex: RegEx = RegEx.new()
+			regex.compile('get_node\\s*\\(\\s*"([^"]*)"\\s*\\)')
+			var path_match: RegExMatch = regex.search(stripped)
+			var path_hint: String = " (node path may not exist)"
+			if path_match:
+				path_hint = " — node not found: '%s'" % path_match.get_string(1)
+			_send_response({"error": "Expression execution error:%s" % path_hint, "error_type": "runtime", "raw_error": error_text})
+			return
+		_send_response({"error": "Expression execution error: %s" % error_text, "error_type": "runtime"})
 		return
 	_send_response({"success": true, "result": _variant_to_json(result)})
 
