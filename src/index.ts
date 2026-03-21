@@ -357,8 +357,19 @@ class GodotServer {
     const autoloadLine = `${this.AUTOLOAD_NAME}="*res://mcp_interaction_server.gd"`;
 
     if (content.includes('[autoload]')) {
-      // Add after existing [autoload] section header
-      content = content.replace('[autoload]', `[autoload]\n\n${autoloadLine}`);
+      // Find the [autoload] section and insert at the top (before first non-empty line)
+      const autoloadIndex = content.indexOf('[autoload]');
+      const afterHeader = content.substring(autoloadIndex + '[autoload]'.length);
+      // Skip existing blank lines after [autoload]
+      const firstNonBlank = afterHeader.search(/\S/);
+      if (firstNonBlank !== -1) {
+        content = content.substring(0, autoloadIndex) +
+          `[autoload]\n\n${autoloadLine}\n` +
+          afterHeader.substring(firstNonBlank);
+      } else {
+        content = content.substring(0, autoloadIndex) +
+          `[autoload]\n\n${autoloadLine}\n`;
+      }
     } else {
       // Add new [autoload] section at end
       content += `\n[autoload]\n\n${autoloadLine}\n`;
@@ -381,6 +392,10 @@ class GodotServer {
       // Remove the autoload line (and any surrounding blank line)
       const autoloadLine = `${this.AUTOLOAD_NAME}="*res://mcp_interaction_server.gd"`;
       content = content.replace(new RegExp(`\\n?${autoloadLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`), '\n');
+      // Clean up any resulting triple+ newlines globally
+      content = content.replace(/\n{3,}/g, '\n\n');
+      // Normalize [autoload] section: ensure exactly one blank line after header
+      content = content.replace(/\[autoload\]\n{2,}/g, '[autoload]\n\n');
       writeFileSync(projectFile, content, 'utf8');
       this.logDebug('Removed interaction server autoload from project.godot');
     }
@@ -526,14 +541,29 @@ class GodotServer {
   private async cleanup() {
     this.logDebug('Cleaning up resources');
     this.disconnectFromGame();
+    if (this.activeProcess) {
+      this.logDebug('Killing active Godot process');
+      const proc = this.activeProcess.process;
+      proc.kill();
+      // Wait for the process to fully exit before cleaning project.godot,
+      // otherwise Godot's shutdown handler rewrites the file after us.
+      await new Promise<void>((resolve) => {
+        proc.on('exit', () => {
+          // Small delay to ensure Godot has fully flushed file writes
+          setTimeout(() => resolve(), 500);
+        });
+        // Force-kill after 5s if it hasn't exited
+        setTimeout(() => {
+          try { proc.kill('SIGKILL'); } catch (_) {}
+          resolve();
+        }, 5000);
+      });
+      this.activeProcess = null;
+    }
+    // Remove interaction server AFTER process has fully exited
     if (this.gameConnection.projectPath) {
       this.removeInteractionServer(this.gameConnection.projectPath);
       this.gameConnection.projectPath = null;
-    }
-    if (this.activeProcess) {
-      this.logDebug('Killing active Godot process');
-      this.activeProcess.process.kill();
-      this.activeProcess = null;
     }
     await this.server.close();
   }
@@ -3745,12 +3775,26 @@ class GodotServer {
 
     this.logDebug('Stopping active Godot process');
     this.disconnectFromGame();
-    this.activeProcess.process.kill();
+    const proc = this.activeProcess.process;
     const output = this.activeProcess.output;
     const errors = this.activeProcess.errors;
     this.activeProcess = null;
     this.lastErrorIndex = 0;
     this.lastLogIndex = 0;
+    proc.kill();
+    // Wait for the process to fully exit before cleaning project.godot,
+    // otherwise Godot's shutdown handler rewrites the file after us.
+    await new Promise<void>((resolve) => {
+      proc.on('exit', () => {
+        // Small delay to ensure Godot has fully flushed file writes
+        setTimeout(() => resolve(), 500);
+      });
+      // Force-kill after 5s if it hasn't exited
+      setTimeout(() => {
+        try { proc.kill('SIGKILL'); } catch (_) {}
+        resolve();
+      }, 5000);
+    });
 
     // Remove injected interaction server
     if (this.gameConnection.projectPath) {
